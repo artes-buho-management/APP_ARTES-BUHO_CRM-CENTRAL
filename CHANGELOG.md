@@ -1,0 +1,101 @@
+# CHANGELOG
+
+## 0.2.1 - 2026-04-07
+- Auditoria remota completa de hoja central por API:
+  - nuevo script `scripts/audit_google_sheet_full.py`
+  - salida JSON actualizada en `reports/central_sheet_inspection.json`
+  - resumen actualizado en `docs/INSPECCION_HOJA_CENTRAL_2026-04-07.md`
+- Auditoria remota completa de los 7 CRM por API:
+  - nuevo script `scripts/audit_provided_crms_full.py`
+  - resultados en `reports/crm_inspection/2026-04-07/*.inspection.json`
+  - resumen de lote en `reports/crm_inspection/2026-04-07/crm_summary_live.json`
+  - resumen legible en `docs/INSPECCION_CRM_2026-04-07.md`
+- Re-sincronizacion remota de fuentes:
+  - `FUENTES` actualizado con 87 filas activas
+  - estado operativo validado en hojas internas
+- Operador remoto de contactos:
+  - nuevo script `scripts/remote_contact_ops.py`
+  - busqueda inteligente en todas las fuentes activas
+  - escritura de resultados en `RESULTADOS`
+  - actualizacion directa en fila origen (modo real o `dry-run`)
+  - guia `docs/OPERACION_REMOTA_CONTACTOS.md`
+- Worker remoto IA local:
+  - nuevo script `scripts/ia_local_queue_worker.py`
+  - encola y procesa `CONTACT_SEARCH`, `CONTACT_UPDATE`, `PARSE_UPDATE_MESSAGE`
+  - estados y reintentos en `IA_LOCAL_COLA`
+  - `PARSE_UPDATE_MESSAGE` queda en `WAITING_AI` si IA local no disponible
+  - guia `docs/COLA_IA_LOCAL_REMOTA.md`
+- Optimizacion de escritura:
+  - cambios a modo `RAW` para evitar conversion de telefonos en Google Sheets
+- Desbloqueo OAuth Apps Script:
+  - resuelto bloqueo `invalid_rapt` para `clasp` en remoto
+  - despliegues activos actualizados a version `6`
+  - estado documentado en `docs/ESTADO_DESPLIEGUE_APPS_SCRIPT_2026-04-08.md`
+- Manifest actualizado:
+  - `executionApi.access = MYSELF` en `appsscript.json`
+- Organizacion visual de hoja central:
+  - nuevo script `scripts/organize_central_sheet_branding.py`
+  - eliminada pestaña vacia `Hoja 1`
+  - creada pestaña `GUIA` con uso rapido
+  - orden final de pestañas: `GUIA`, `FUENTES`, `RESULTADOS`, `IA_LOCAL_COLA`, `LOG`, `AUDITORIA_HOJA`
+  - aplicados colores corporativos rojo/amarillo/blanco en cabeceras y pestañas
+  - inspeccion completa pre/post/final en `docs/*ORGANIZE_2026-04-08.md`
+
+## 0.2.0 - 2026-04-06
+- Rebranding corporativo completo:
+  - empresa `ARTES BURO`
+  - desarrollador `RUBEN COTTON`
+  - paleta amarillo/rojo/blanco
+  - logo integrado en UI
+- Nueva UX para operativa real:
+  - buscar contacto
+  - seleccionar resultado
+  - actualizar contacto en hoja origen
+- Motor de busqueda inteligente:
+  - score por coincidencia
+  - similitud por distancia de edicion
+  - tolerancia de variaciones de texto
+- IA local unica:
+  - modo `LOCAL_ONLY`
+  - cola `IA_LOCAL_COLA`
+  - estado disponible/en espera
+  - reintentos
+- Auditoria completa de hojas:
+  - estructura
+  - datos y formulas
+  - formatos
+  - combinadas
+  - validaciones
+  - filtros/vistas de filtro
+  - formato condicional
+  - protecciones/permisos
+  - salida en `AUDITORIA_HOJA`
+- Inspeccion inicial ejecutada sobre hoja central:
+  - resumen en `docs/INSPECCION_HOJA_CENTRAL_2026-04-06.md`
+  - detalle en `reports/central_sheet_inspection.json`
+- Integrado catalogo de 7 CRM proporcionados:
+  - sincronizacion de pestanas por lote
+  - funcion `syncProvidedCrmsCatalog`
+  - API `apiSyncProvidedCrmsCatalog`
+  - auditoria por lote `runProvidedCrmsAudit`
+- Inspeccion tecnica de los 7 CRM:
+  - resumen en `docs/INSPECCION_CRM_2026-04-06.md`
+  - detalle en `reports/crm_inspection/2026-04-06/*.inspection.json`
+- Conexion remota ejecutada en hoja central:
+  - 7 CRM conectados
+  - 87 fuentes cargadas
+  - 0 errores de conexion
+  - evidencia en `docs/ESTADO_CONEXION_REMOTA_2026-04-06.md`
+- Script operativo de setup remoto:
+  - `scripts/setup_remote_central.py`
+
+## 0.1.1 - 2026-04-06
+- Hoja central fija configurada:
+  - `1gNg71eDZefbx_8leQ8ij7pOaBXdsWIFnNK_QhXjv8W0`
+- Lectura y escritura interna del sistema apuntan a esa hoja central.
+- Documentacion actualizada con URL e ID de hoja central.
+
+## 0.1.0 - 2026-04-06
+- Creacion del proyecto base.
+- Estructura inicial para busqueda central de contactos.
+- Servicios minimos para registro de fuentes y busqueda.

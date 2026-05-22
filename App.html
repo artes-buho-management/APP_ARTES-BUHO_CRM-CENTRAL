@@ -1,0 +1,189 @@
+<main class="page">
+  <header class="hero">
+    <div class="hero-logo">
+      <?!= include('BrandLogo'); ?>
+    </div>
+    <div class="hero-copy">
+      <h1 id="brand-app-title">CRM CENTRAL</h1>
+      <p class="hero-subtitle" id="brand-company">ARTES BURO</p>
+      <p class="hero-meta">
+        <span id="brand-developer">DESARROLLADO POR RUBEN COTTON</span>
+      </p>
+    </div>
+    <div class="hero-badges">
+      <span class="badge" id="badge-ai-mode">IA LOCAL ONLY</span>
+      <span class="badge" id="badge-ai-status">IA EN ESPERA</span>
+    </div>
+  </header>
+
+  <section class="card card-main">
+    <h2>BUSCAR CONTACTO</h2>
+    <form id="search-form">
+      <label>
+        TEXTO A BUSCAR
+        <input
+          id="term"
+          name="term"
+          type="text"
+          placeholder="NOMBRE, EMAIL, TELEFONO O ID"
+          required
+        />
+      </label>
+      <label>
+        MAXIMO RESULTADOS
+        <input id="maxResults" name="maxResults" type="number" min="1" max="500" value="200" />
+      </label>
+      <button type="submit">BUSCAR</button>
+    </form>
+    <p id="status" class="status">LISTO PARA BUSCAR.</p>
+    <p class="status-note">
+      BUSQUEDA INTELIGENTE: ADMITE ERRORES DE ESCRITURA Y VARIANTES DE TEXTO.
+    </p>
+  </section>
+
+  <section class="card">
+    <h2>RESULTADOS</h2>
+    <div class="table-wrap">
+      <table id="results-table">
+        <thead>
+          <tr>
+            <th>SCORE</th>
+            <th>ALIAS</th>
+            <th>HOJA</th>
+            <th>FILA</th>
+            <th>MATCH</th>
+            <th>ID</th>
+            <th>NOMBRE</th>
+            <th>EMAIL</th>
+            <th>TELEFONO</th>
+            <th>NOTAS</th>
+            <th>ACCION</th>
+          </tr>
+        </thead>
+        <tbody id="results-body">
+          <tr>
+            <td colspan="11">SIN RESULTADOS POR AHORA.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>ACTUALIZAR CONTACTO</h2>
+    <form id="edit-form">
+      <input type="hidden" id="edit-spreadsheetId" />
+      <input type="hidden" id="edit-sheetName" />
+      <input type="hidden" id="edit-rowNumber" />
+
+      <label>
+        ORIGEN
+        <input id="edit-origin" type="text" readonly />
+      </label>
+      <label>
+        ID
+        <input id="edit-contactId" type="text" />
+      </label>
+      <label>
+        NOMBRE
+        <input id="edit-name" type="text" />
+      </label>
+      <label>
+        EMAIL
+        <input id="edit-email" type="text" />
+      </label>
+      <label>
+        TELEFONO
+        <input id="edit-phone" type="text" />
+      </label>
+      <label class="full-width">
+        NOTAS
+        <input id="edit-notes" type="text" />
+      </label>
+      <button type="submit">GUARDAR CAMBIOS</button>
+    </form>
+  </section>
+
+  <section class="card">
+    <h2>REGISTRAR FUENTE CRM</h2>
+    <form id="source-form">
+      <label>
+        ALIAS
+        <input name="alias" type="text" placeholder="CRM VENTAS" required />
+      </label>
+      <label>
+        SPREADSHEET ID
+        <input name="spreadsheetId" type="text" required />
+      </label>
+      <label>
+        HOJA
+        <input name="hoja" type="text" value="CONTACTOS" required />
+      </label>
+      <label>
+        HEADER ROW
+        <input name="headerRow" type="number" min="1" value="1" required />
+      </label>
+      <label>
+        CAMPO NOMBRE
+        <input name="campoNombre" type="text" value="Nombre" />
+      </label>
+      <label>
+        CAMPO EMAIL
+        <input name="campoEmail" type="text" value="Email" />
+      </label>
+      <label>
+        CAMPO TELEFONO
+        <input name="campoTelefono" type="text" value="Telefono" />
+      </label>
+      <label>
+        CAMPO ID
+        <input name="campoId" type="text" value="ID" />
+      </label>
+      <label>
+        CAMPO NOTAS
+        <input name="campoNotas" type="text" value="Notas" />
+      </label>
+      <label class="checkbox">
+        <input name="activo" type="checkbox" checked />
+        FUENTE ACTIVA
+      </label>
+      <button type="submit">GUARDAR FUENTE</button>
+      <button type="button" id="sync-tabs-btn" class="secondary">
+        SINCRONIZAR TODAS LAS PESTANAS
+      </button>
+      <button type="button" id="sync-crm-catalog-btn" class="secondary">
+        CARGAR 7 CRM PROPORCIONADOS
+      </button>
+    </form>
+  </section>
+
+  <section class="card">
+    <h2>FUENTES ACTIVAS</h2>
+    <div class="table-wrap">
+      <table id="sources-table">
+        <thead>
+          <tr>
+            <th>ACTIVO</th>
+            <th>ALIAS</th>
+            <th>SPREADSHEET ID</th>
+            <th>HOJA</th>
+            <th>HEADER ROW</th>
+          </tr>
+        </thead>
+        <tbody id="sources-body">
+          <tr>
+            <td colspan="5">NO HAY FUENTES CARGADAS.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <strong>ARTES BURO</strong>
+    <span>|</span>
+    <span>DESARROLLADOR: RUBEN COTTON</span>
+    <span>|</span>
+    <span>IA LOCAL UNICA</span>
+  </footer>
+</main>

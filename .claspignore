@@ -1,0 +1,11 @@
+# Excluir ficheros que no son Apps Script.
+.git/**
+.github/**
+docs/**
+PROMPTS/**
+reports/**
+*.xlsx
+README.md
+CHANGELOG.md
+AGENTS.md
+.clasp.json.example

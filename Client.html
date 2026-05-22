@@ -1,0 +1,388 @@
+<script>
+  var APP_STATE = {
+    results: [],
+    selectedResultKey: "",
+    localAiAvailable: false,
+  };
+
+  function setStatus(text, isError) {
+    var status = document.getElementById("status");
+    status.textContent = text;
+    status.classList.toggle("error", !!isError);
+  }
+
+  function setAiBadges(localAi) {
+    var modeBadge = document.getElementById("badge-ai-mode");
+    var statusBadge = document.getElementById("badge-ai-status");
+
+    var mode = localAi && localAi.mode ? String(localAi.mode) : "LOCAL_ONLY";
+    var available = !!(localAi && localAi.available);
+
+    modeBadge.textContent = "IA " + mode.replace(/_/g, " ");
+    statusBadge.textContent = available ? "IA DISPONIBLE" : "IA EN ESPERA";
+    statusBadge.classList.toggle("good", available);
+    APP_STATE.localAiAvailable = available;
+  }
+
+  function loadPublicConfig() {
+    google.script.run
+      .withSuccessHandler(function (response) {
+        if (!response || !response.ok || !response.config) {
+          return;
+        }
+
+        var config = response.config;
+        document.getElementById("brand-app-title").textContent =
+          String(config.appTitle || "CRM CENTRAL").toUpperCase();
+        document.getElementById("brand-company").textContent = String(
+          (config.brand && config.brand.COMPANY_NAME) || "ARTES BURO"
+        ).toUpperCase();
+        document.getElementById("brand-developer").textContent =
+          "DESARROLLADO POR " +
+          String((config.brand && config.brand.DEVELOPER_NAME) || "RUBEN COTTON").toUpperCase();
+
+        setAiBadges(config.localAi || {});
+      })
+      .withFailureHandler(function () {
+        // Si falla la config publica, seguimos con el layout por defecto.
+      })
+      .apiGetPublicConfig();
+  }
+
+  function onSearchSubmit(event) {
+    event.preventDefault();
+
+    var term = document.getElementById("term").value.trim();
+    var maxResults = parseInt(document.getElementById("maxResults").value, 10);
+
+    if (!term) {
+      setStatus("ESCRIBE UN TERMINO DE BUSQUEDA.", true);
+      return;
+    }
+
+    setStatus("BUSCANDO...", false);
+
+    google.script.run
+      .withSuccessHandler(function (response) {
+        if (!response.ok) {
+          setStatus(response.error || "ERROR EN BUSQUEDA.", true);
+          renderResults([]);
+          return;
+        }
+
+        APP_STATE.results = response.results || [];
+        setStatus("BUSQUEDA FINALIZADA. TOTAL: " + response.total, false);
+        renderResults(APP_STATE.results);
+
+        if (typeof response.localAiAvailable !== "undefined") {
+          setAiBadges({
+            mode: "LOCAL_ONLY",
+            available: !!response.localAiAvailable,
+          });
+        }
+      })
+      .withFailureHandler(function (error) {
+        setStatus("FALLO DE CONEXION: " + error.message, true);
+      })
+      .apiSearchContacts({
+        term: term,
+        maxResults: maxResults,
+      });
+  }
+
+  function onSourceSubmit(event) {
+    event.preventDefault();
+
+    var form = event.currentTarget;
+    var payload = readSourcePayloadFromForm(form);
+
+    setStatus("GUARDANDO FUENTE...", false);
+
+    google.script.run
+      .withSuccessHandler(function (response) {
+        if (!response.ok) {
+          setStatus(response.error || "NO SE PUDO GUARDAR LA FUENTE.", true);
+          return;
+        }
+
+        setStatus("FUENTE GUARDADA CORRECTAMENTE.", false);
+        form.reset();
+        refreshSources();
+      })
+      .withFailureHandler(function (error) {
+        setStatus("FALLO GUARDANDO FUENTE: " + error.message, true);
+      })
+      .apiRegisterSource(payload);
+  }
+
+  function onSyncTabsClick() {
+    var form = document.getElementById("source-form");
+    var payload = readSourcePayloadFromForm(form);
+
+    if (!payload.alias || !payload.spreadsheetId) {
+      setStatus("INDICA ALIAS Y SPREADSHEET ID PARA SINCRONIZAR PESTANAS.", true);
+      return;
+    }
+
+    setStatus("SINCRONIZANDO PESTANAS...", false);
+
+    google.script.run
+      .withSuccessHandler(function (response) {
+        if (!response.ok) {
+          setStatus(response.error || "NO SE PUDIERON SINCRONIZAR LAS PESTANAS.", true);
+          return;
+        }
+        setStatus("SINCRONIZADAS " + response.synced + " PESTANAS.", false);
+        refreshSources();
+      })
+      .withFailureHandler(function (error) {
+        setStatus("FALLO SINCRONIZANDO PESTANAS: " + error.message, true);
+      })
+      .apiSyncSourceTabs(payload);
+  }
+
+  function onSyncCatalogClick() {
+    setStatus("CARGANDO CATALOGO DE 7 CRM...", false);
+
+    google.script.run
+      .withSuccessHandler(function (response) {
+        if (!response.ok) {
+          setStatus(response.error || "NO SE PUDO CARGAR EL CATALOGO CRM.", true);
+          return;
+        }
+
+        setStatus("CATALOGO CARGADO. CRM SINCRONIZADOS: " + response.total, false);
+        refreshSources();
+      })
+      .withFailureHandler(function (error) {
+        setStatus("FALLO CARGANDO CATALOGO CRM: " + error.message, true);
+      })
+      .apiSyncProvidedCrmsCatalog();
+  }
+
+  function readSourcePayloadFromForm(form) {
+    var formData = new FormData(form);
+    return {
+      activo: formData.get("activo") === "on",
+      alias: String(formData.get("alias") || "").trim(),
+      spreadsheetId: String(formData.get("spreadsheetId") || "").trim(),
+      hoja: String(formData.get("hoja") || "").trim(),
+      headerRow: parseInt(formData.get("headerRow"), 10) || 1,
+      campoNombre: String(formData.get("campoNombre") || "").trim(),
+      campoEmail: String(formData.get("campoEmail") || "").trim(),
+      campoTelefono: String(formData.get("campoTelefono") || "").trim(),
+      campoId: String(formData.get("campoId") || "").trim(),
+      campoNotas: String(formData.get("campoNotas") || "").trim(),
+    };
+  }
+
+  function onEditSubmit(event) {
+    event.preventDefault();
+
+    var spreadsheetId = document.getElementById("edit-spreadsheetId").value;
+    var sheetName = document.getElementById("edit-sheetName").value;
+    var rowNumber = parseInt(document.getElementById("edit-rowNumber").value, 10);
+
+    if (!spreadsheetId || !sheetName || !rowNumber) {
+      setStatus("PRIMERO SELECCIONA UN RESULTADO PARA EDITAR.", true);
+      return;
+    }
+
+    var payload = {
+      spreadsheetId: spreadsheetId,
+      sheetName: sheetName,
+      rowNumber: rowNumber,
+      contactId: document.getElementById("edit-contactId").value,
+      name: document.getElementById("edit-name").value,
+      email: document.getElementById("edit-email").value,
+      phone: document.getElementById("edit-phone").value,
+      notes: document.getElementById("edit-notes").value,
+    };
+
+    setStatus("GUARDANDO CAMBIOS...", false);
+
+    google.script.run
+      .withSuccessHandler(function (response) {
+        if (!response.ok) {
+          setStatus(response.error || "NO SE PUDO ACTUALIZAR.", true);
+          return;
+        }
+
+        setStatus("CONTACTO ACTUALIZADO CORRECTAMENTE.", false);
+        var updated = response.result && response.result.record ? response.result.record : null;
+        if (updated) {
+          updateResultInState(updated);
+          renderResults(APP_STATE.results);
+          fillEditForm(updated);
+        }
+      })
+      .withFailureHandler(function (error) {
+        setStatus("FALLO ACTUALIZANDO CONTACTO: " + error.message, true);
+      })
+      .apiUpdateContact(payload);
+  }
+
+  function updateResultInState(record) {
+    var key = buildRecordKey(record);
+    for (var i = 0; i < APP_STATE.results.length; i++) {
+      if (buildRecordKey(APP_STATE.results[i]) === key) {
+        APP_STATE.results[i] = Object.assign({}, APP_STATE.results[i], record);
+        return;
+      }
+    }
+    APP_STATE.results.unshift(record);
+  }
+
+  function refreshSources() {
+    google.script.run
+      .withSuccessHandler(function (response) {
+        if (!response.ok) {
+          setStatus(response.error || "NO SE PUDIERON CARGAR FUENTES.", true);
+          renderSources([]);
+          return;
+        }
+        renderSources(response.sources || []);
+      })
+      .withFailureHandler(function (error) {
+        setStatus("FALLO CARGANDO FUENTES: " + error.message, true);
+      })
+      .apiGetSources();
+  }
+
+  function renderResults(results) {
+    var tbody = document.getElementById("results-body");
+    tbody.innerHTML = "";
+
+    if (!results.length) {
+      var emptyRow = document.createElement("tr");
+      var emptyCell = document.createElement("td");
+      emptyCell.colSpan = 11;
+      emptyCell.textContent = "SIN RESULTADOS.";
+      emptyRow.appendChild(emptyCell);
+      tbody.appendChild(emptyRow);
+      return;
+    }
+
+    results.forEach(function (item, index) {
+      var key = buildRecordKey(item);
+      var row = document.createElement("tr");
+      if (APP_STATE.selectedResultKey === key) {
+        row.classList.add("selected-row");
+      }
+
+      appendCell(row, createScoreChip(item.score));
+      appendCell(row, item.sourceAlias || "");
+      appendCell(row, item.sheetName || "");
+      appendCell(row, item.rowNumber || "");
+      appendCell(row, item.matchedBy || "");
+      appendCell(row, item.contactId || "");
+      appendCell(row, item.name || "");
+      appendCell(row, item.email || "");
+      appendCell(row, item.phone || "");
+      appendCell(row, item.notes || "");
+
+      var actionCell = document.createElement("td");
+      var actionBtn = document.createElement("button");
+      actionBtn.type = "button";
+      actionBtn.className = "secondary";
+      actionBtn.textContent = "EDITAR";
+      actionBtn.dataset.index = String(index);
+      actionBtn.addEventListener("click", function () {
+        var idx = parseInt(this.dataset.index, 10);
+        selectResult(idx);
+      });
+      actionCell.appendChild(actionBtn);
+      row.appendChild(actionCell);
+
+      tbody.appendChild(row);
+    });
+  }
+
+  function selectResult(index) {
+    var item = APP_STATE.results[index];
+    if (!item) {
+      return;
+    }
+
+    APP_STATE.selectedResultKey = buildRecordKey(item);
+    fillEditForm(item);
+    renderResults(APP_STATE.results);
+    setStatus("CONTACTO CARGADO PARA EDICION.", false);
+  }
+
+  function fillEditForm(item) {
+    document.getElementById("edit-spreadsheetId").value = item.spreadsheetId || "";
+    document.getElementById("edit-sheetName").value = item.sheetName || "";
+    document.getElementById("edit-rowNumber").value = String(item.rowNumber || "");
+    document.getElementById("edit-origin").value =
+      (item.sourceAlias || "SIN_ALIAS") + " | " + (item.sheetName || "") + " | FILA " + item.rowNumber;
+    document.getElementById("edit-contactId").value = item.contactId || "";
+    document.getElementById("edit-name").value = item.name || "";
+    document.getElementById("edit-email").value = item.email || "";
+    document.getElementById("edit-phone").value = item.phone || "";
+    document.getElementById("edit-notes").value = item.notes || "";
+  }
+
+  function buildRecordKey(item) {
+    return [
+      String(item.spreadsheetId || ""),
+      String(item.sheetName || ""),
+      String(item.rowNumber || ""),
+    ].join("|");
+  }
+
+  function createScoreChip(score) {
+    var chip = document.createElement("span");
+    chip.className = "score-chip";
+    var value = Number(score || 0);
+    chip.textContent = isNaN(value) ? "0.00" : value.toFixed(2);
+    return chip;
+  }
+
+  function appendCell(row, valueOrNode) {
+    var cell = document.createElement("td");
+    if (valueOrNode && valueOrNode.nodeType) {
+      cell.appendChild(valueOrNode);
+    } else {
+      cell.textContent = valueOrNode || "";
+    }
+    row.appendChild(cell);
+  }
+
+  function renderSources(sources) {
+    var tbody = document.getElementById("sources-body");
+    tbody.innerHTML = "";
+
+    if (!sources.length) {
+      var row = document.createElement("tr");
+      var cell = document.createElement("td");
+      cell.colSpan = 5;
+      cell.textContent = "NO HAY FUENTES CARGADAS.";
+      row.appendChild(cell);
+      tbody.appendChild(row);
+      return;
+    }
+
+    sources.forEach(function (source) {
+      var row = document.createElement("tr");
+      appendCell(row, source.activo ? "SI" : "NO");
+      appendCell(row, source.alias || "");
+      appendCell(row, source.spreadsheetId || "");
+      appendCell(row, source.hoja || "");
+      appendCell(row, String(source.headerRow || ""));
+      tbody.appendChild(row);
+    });
+  }
+
+  document.addEventListener("DOMContentLoaded", function () {
+    document.getElementById("search-form").addEventListener("submit", onSearchSubmit);
+    document.getElementById("source-form").addEventListener("submit", onSourceSubmit);
+    document.getElementById("edit-form").addEventListener("submit", onEditSubmit);
+    document.getElementById("sync-tabs-btn").addEventListener("click", onSyncTabsClick);
+    document
+      .getElementById("sync-crm-catalog-btn")
+      .addEventListener("click", onSyncCatalogClick);
+    refreshSources();
+    loadPublicConfig();
+  });
+</script>
